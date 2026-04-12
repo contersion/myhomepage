@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 站点配置表
+model SiteConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
+
+// 按钮分组表
+model ButtonGroup {
+  id        String    @id @default(cuid())
+  name      String
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  buttons   Button[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// 按钮表
+model Button {
+  id          String       @id @default(cuid())
+  title       String
+  url         String
+  icon        String?      // 图标 URL 或 base64
+  openInNew   Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  isActive    Boolean      @default(true)
+  groupId     String
+  group       ButtonGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+// 背景图片表
+model Background {
+  id        String   @id @default(cuid())
+  url       String
+  device    String   // "pc" | "mobile"
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 上传资源表
+model Resource {
+  id           String   @id @default(cuid())
+  type         String   // "background" | "icon"
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int      // 最终文件大小（字节）
+  width        Int?     // 图片宽度（像素）
+  height       Int?     // 图片高度（像素）
+  path         String   // 相对路径
+  url          String   // 访问 URL
+  createdAt    DateTime @default(now())
+}
+
+// 访问日志表
+model AccessLog {
+  id        String   @id @default(cuid())
+  ip        String
+  userAgent String?
+  path      String
+  method    String
+  status    Int
+  timestamp DateTime @default(now())
+}
+
+// 操作日志表
+model OperationLog {
+  id        String   @id @default(cuid())
+  userType  String   // "visitor" | "admin"
+  action    String
+  details   String?
+  ip        String
+  timestamp DateTime @default(now())
+}
+
+// 登录失败记录（用于限流）
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  ip        String
+  type      String   // "visitor" | "admin"
+  count     Int      @default(1)
+  lastAttempt DateTime @default(now())
+  lockedUntil DateTime?
+}
