@@ -147,8 +147,9 @@ async function processRasterImage(
     // 是否需要缩放
     const needsResize = width !== metadata.width || height !== metadata.height;
 
-    // 确定输出格式（优先 WebP，其次保持原格式）
-    const outputFormat: keyof sharp.FormatEnum = metadata.format === "webp" ? "webp" : "jpeg";
+    // 保持原始栅格格式：PNG -> PNG，WebP -> WebP，其他受支持格式 -> JPEG
+    const outputFormat: keyof sharp.FormatEnum =
+      metadata.format === "webp" ? "webp" : metadata.format === "png" ? "png" : "jpeg";
 
     // 构建处理管道
     let pipeline = image;
@@ -161,6 +162,8 @@ async function processRasterImage(
     // 压缩
     if (outputFormat === "webp") {
       pipeline = pipeline.webp({ quality, effort: 4 });
+    } else if (outputFormat === "png") {
+      pipeline = pipeline.png({ compressionLevel: 9, progressive: true });
     } else {
       // JPEG 格式，带渐进式加载
       pipeline = pipeline.jpeg({ 

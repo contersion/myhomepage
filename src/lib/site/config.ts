@@ -22,6 +22,7 @@ export const DEFAULT_SITE_CONFIG = {
   // 页面标题
   access_page_title: "",
   home_page_title: "",
+  admin_page_title: "",
   // 站点图标
   site_favicon_asset_id: "",
   // 访客密码开关
@@ -209,7 +210,7 @@ export async function getFooterMetaConfig(): Promise<FooterMetaConfig> {
 
 // ==================== 页面标题与图标 ====================
 
-async function resolvePageTitle(pageTitleKey: "access_page_title" | "home_page_title"): Promise<string> {
+async function resolvePageTitle(pageTitleKey: "access_page_title" | "home_page_title" | "admin_page_title"): Promise<string> {
   const [pageTitle, siteTitle] = await Promise.all([
     getSiteConfigValue(pageTitleKey, ""),
     getSiteConfigValue("site_title", DEFAULT_SITE_CONFIG.site_title),
@@ -223,6 +224,10 @@ export async function getAccessPageTitle(): Promise<string> {
 
 export async function getHomePageTitle(): Promise<string> {
   return resolvePageTitle("home_page_title");
+}
+
+export async function getAdminPageTitle(): Promise<string> {
+  return resolvePageTitle("admin_page_title");
 }
 
 export async function getSiteFavicon(): Promise<string | null> {

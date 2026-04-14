@@ -60,6 +60,7 @@ const updateConfigSchema = z.object({
   // 页面标题与图标
   access_page_title: z.string().max(100).optional(),
   home_page_title: z.string().max(100).optional(),
+  admin_page_title: z.string().max(100).optional(),
   site_favicon_asset_id: z.union([z.string().max(100), z.literal("")]).optional().nullable(),
   // 底部备案信息
   footer_meta_enabled: z.enum(["true", "false"]).optional(),

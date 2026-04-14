@@ -32,6 +32,7 @@ interface SiteConfig {
   // 页面标题与图标
   access_page_title: string;
   home_page_title: string;
+  admin_page_title: string;
   site_favicon_asset_id: string;
   // 底部备案
   footer_meta_enabled: boolean;
@@ -54,6 +55,28 @@ export default function AdminDashboardPage() {
   // 记录页面访问
   useEffect(() => {
     logPageAccess("/admin");
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    document.title = "管理后台";
+
+    fetch("/api/admin/site")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data.success) {
+          document.title = data.data.admin_page_title || data.data.site_title || "管理后台";
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          document.title = "管理后台";
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const tabs = [
@@ -388,6 +411,7 @@ function SiteConfigTab() {
     access_background_blur: 10,
     access_page_title: "",
     home_page_title: "",
+    admin_page_title: "",
     site_favicon_asset_id: "",
     footer_meta_enabled: false,
     footer_meta_display_scope: "none",
@@ -421,6 +445,7 @@ function SiteConfigTab() {
             access_background_blur: parseInt(data.data.access_background_blur || "10", 10) || 10,
             access_page_title: data.data.access_page_title || "",
             home_page_title: data.data.home_page_title || "",
+            admin_page_title: data.data.admin_page_title || "",
             site_favicon_asset_id: data.data.site_favicon_asset_id || "",
             footer_meta_enabled: data.data.footer_meta_enabled === "true",
             footer_meta_display_scope: ["none", "access", "home", "both"].includes(data.data.footer_meta_display_scope)
@@ -458,6 +483,7 @@ function SiteConfigTab() {
       access_background_blur: String(config.access_background_blur),
       access_page_title: config.access_page_title,
       home_page_title: config.home_page_title,
+      admin_page_title: config.admin_page_title,
       site_favicon_asset_id: config.site_favicon_asset_id,
       footer_meta_enabled: config.footer_meta_enabled ? "true" : "false",
       footer_meta_display_scope: config.footer_meta_display_scope,
@@ -581,6 +607,19 @@ function SiteConfigTab() {
                 type="text"
                 value={config.home_page_title}
                 onChange={(e) => setConfig({ ...config, home_page_title: e.target.value })}
+                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                placeholder="留空则使用默认站点标题"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                后台管理标题 (/admin)
+              </label>
+              <input
+                type="text"
+                value={config.admin_page_title}
+                onChange={(e) => setConfig({ ...config, admin_page_title: e.target.value })}
                 className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                 placeholder="留空则使用默认站点标题"
               />

@@ -4,7 +4,8 @@
  * 根据后台配置的 site_favicon_asset_id 返回对应图标，未配置时返回默认透明 PNG
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { promises as fs } from "fs";
 import { prisma } from "@/lib/db";
 import { getSiteConfigValue } from "@/lib/site/config";
 
@@ -14,19 +15,27 @@ const DEFAULT_FAVICON_B64 =
 
 const CACHE_CONTROL = "no-store, no-cache, must-revalidate, proxy-revalidate";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const assetId = await getSiteConfigValue("site_favicon_asset_id", "");
     if (assetId) {
       const resource = await prisma.resource.findUnique({
         where: { id: assetId },
-        select: { url: true },
+        select: { path: true, mimeType: true },
       });
-      if (resource?.url) {
-        return NextResponse.redirect(new URL(resource.url, request.url), {
-          status: 307,
-          headers: { "Cache-Control": CACHE_CONTROL },
-        });
+      if (resource?.path) {
+        try {
+          const buf = await fs.readFile(resource.path);
+          return new NextResponse(buf, {
+            status: 200,
+            headers: {
+              "Content-Type": resource.mimeType || "image/png",
+              "Cache-Control": CACHE_CONTROL,
+            },
+          });
+        } catch {
+          // 文件读取失败时回退到默认图标
+        }
       }
     }
   } catch {

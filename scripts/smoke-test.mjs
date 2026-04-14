@@ -298,8 +298,12 @@ function defineSmokeTests(baseUrl, visitorPasswordEnabled) {
   // 12. favicon 固定入口可访问
   test('favicon endpoint returns valid response', async () => {
     const res = await request(`${baseUrl}/api/site/favicon`);
-    if (res.statusCode !== 200 && res.statusCode !== 307 && res.statusCode !== 302) {
-      throw new Error(`Expected 200/307/302, got HTTP ${res.statusCode}`);
+    if (res.statusCode !== 200) {
+      throw new Error(`Expected 200, got HTTP ${res.statusCode}`);
+    }
+    const contentType = res.headers['content-type'] || '';
+    if (!contentType.startsWith('image/')) {
+      throw new Error(`Expected image/* Content-Type, got ${contentType}`);
     }
   });
 }

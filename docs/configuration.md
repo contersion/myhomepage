@@ -145,6 +145,7 @@
 | `access_background_blur` | 访问页背景模糊强度(px) | 10 |
 | `access_page_title` | `/access` 页面标题 | ""（回退到站点标题） |
 | `home_page_title` | 首页 `/` 标题 | ""（回退到站点标题） |
+| `admin_page_title` | 后台管理 `/admin` 页面标题 | ""（回退到站点标题） |
 | `site_favicon_asset_id` | 站点图标 favicon 资源 ID | ""（不自定义） |
 | `visitor_password_enabled` | 是否启用访客密码 | true |
 | `footer_meta_enabled` | 是否启用底部备案信息区 | false |
