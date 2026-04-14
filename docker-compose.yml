@@ -15,7 +15,12 @@ services:
       - PORT=3000
       
       # 数据库配置
-      - DATABASE_URL=${DATABASE_URL:-file:./storage/data/app.db}
+      # SQLite 路径在 Docker 中必须使用绝对路径，避免 Prisma Client 按 schema.prisma 目录解析导致写入到镜像内部
+      # 直接写死绝对路径，防止被 .env 中的相对路径覆盖
+      - DATABASE_URL=file:/app/storage/data/app.db
+      # Next.js standalone 会读取 HOSTNAME 作为绑定地址，Docker 默认注入的是容器主机名，会导致只绑定到容器内网 IP，
+      # 从而使 healthcheck 的 localhost:3000 请求失败。必须显式覆盖为 0.0.0.0
+      - HOSTNAME=0.0.0.0
       
       # Session Secrets（生产环境必须修改）
       - VISITOR_SESSION_SECRET=${VISITOR_SESSION_SECRET}

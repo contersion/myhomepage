@@ -146,11 +146,11 @@ export async function getBackgroundConfig(): Promise<BackgroundConfig> {
   ]);
 
   return {
-    interval: parseInt(interval, 10) || DEFAULT_BG_CONFIG.interval,
+    interval: Number.isNaN(parseInt(interval, 10)) ? DEFAULT_BG_CONFIG.interval : parseInt(interval, 10),
     randomStart: randomStart === "true",
     mobileInheritPc: mobileInheritPc === "true",
-    blur: parseInt(blur, 10) || DEFAULT_BG_CONFIG.blur,
-    overlay: parseFloat(overlay) || DEFAULT_BG_CONFIG.overlay,
+    blur: Number.isNaN(parseInt(blur, 10)) ? DEFAULT_BG_CONFIG.blur : parseInt(blur, 10),
+    overlay: Number.isNaN(parseFloat(overlay)) ? DEFAULT_BG_CONFIG.overlay : parseFloat(overlay),
   };
 }
 

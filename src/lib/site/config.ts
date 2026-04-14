@@ -13,6 +13,28 @@ export const DEFAULT_SITE_CONFIG = {
   card_style: "glass",
   background_blur: "10",
   background_overlay: "0.3",
+  // Access 页面背景
+  access_background_enabled: "false",
+  access_background_asset_id: "",
+  access_background_mobile_asset_id: "",
+  access_background_overlay: "0.3",
+  access_background_blur: "10",
+  // 页面标题
+  access_page_title: "",
+  home_page_title: "",
+  // 站点图标
+  site_favicon_asset_id: "",
+  // 访客密码开关
+  visitor_password_enabled: "true",
+  // 底部备案信息
+  footer_meta_enabled: "false",
+  footer_meta_display_scope: "none",
+  icp_enabled: "false",
+  icp_number: "",
+  icp_link: "",
+  psb_enabled: "false",
+  psb_number: "",
+  psb_link: "",
 };
 
 /**
@@ -88,6 +110,140 @@ export async function getPublicSiteInfo(): Promise<{
     subtitle: config.site_subtitle || DEFAULT_SITE_CONFIG.site_subtitle,
     description: config.site_description || DEFAULT_SITE_CONFIG.site_description,
   };
+}
+
+// ==================== Access 页面背景配置 ====================
+
+export interface AccessBackgroundConfig {
+  enabled: boolean;
+  assetId: string | null;
+  mobileAssetId: string | null;
+  overlay: number;
+  blur: number;
+}
+
+export async function getAccessBackgroundConfig(): Promise<AccessBackgroundConfig> {
+  const config = await getSiteConfig();
+  return {
+    enabled: config.access_background_enabled === "true",
+    assetId: config.access_background_asset_id || null,
+    mobileAssetId: config.access_background_mobile_asset_id || null,
+    overlay: Number.isNaN(parseFloat(config.access_background_overlay || "0.3")) ? 0.3 : parseFloat(config.access_background_overlay || "0.3"),
+    blur: Number.isNaN(parseInt(config.access_background_blur || "10", 10)) ? 10 : parseInt(config.access_background_blur || "10", 10),
+  };
+}
+
+export interface PublicAccessBackgroundData {
+  url: string | null;
+  blur: number;
+  overlay: number;
+}
+
+function isMobileDevice(userAgent?: string): boolean {
+  if (!userAgent) return false;
+  return /Mobile|Android|iPhone|iPad|iPod/i.test(userAgent);
+}
+
+export async function getPublicAccessBackground(
+  userAgent?: string
+): Promise<PublicAccessBackgroundData> {
+  const bgConfig = await getAccessBackgroundConfig();
+
+  if (!bgConfig.enabled) {
+    return { url: null, blur: bgConfig.blur, overlay: bgConfig.overlay };
+  }
+
+  const isMobile = isMobileDevice(userAgent);
+  let assetId = isMobile ? bgConfig.mobileAssetId : bgConfig.assetId;
+
+  // 移动端回退到 PC 背景
+  if (isMobile && !assetId) {
+    assetId = bgConfig.assetId;
+  }
+
+  if (!assetId) {
+    return { url: null, blur: bgConfig.blur, overlay: bgConfig.overlay };
+  }
+
+  const resource = await prisma.resource.findUnique({
+    where: { id: assetId },
+    select: { url: true },
+  });
+
+  return {
+    url: resource?.url || null,
+    blur: bgConfig.blur,
+    overlay: bgConfig.overlay,
+  };
+}
+
+// ==================== 底部备案信息配置 ====================
+
+export type FooterMetaDisplayScope = "none" | "access" | "home" | "both";
+
+export interface FooterMetaConfig {
+  enabled: boolean;
+  displayScope: FooterMetaDisplayScope;
+  icpEnabled: boolean;
+  icpNumber: string;
+  icpLink: string;
+  psbEnabled: boolean;
+  psbNumber: string;
+  psbLink: string;
+}
+
+export async function getFooterMetaConfig(): Promise<FooterMetaConfig> {
+  const config = await getSiteConfig();
+  const scope = config.footer_meta_display_scope as FooterMetaDisplayScope;
+  return {
+    enabled: config.footer_meta_enabled === "true",
+    displayScope: ["none", "access", "home", "both"].includes(scope) ? scope : "none",
+    icpEnabled: config.icp_enabled === "true",
+    icpNumber: config.icp_number || "",
+    icpLink: config.icp_link || "",
+    psbEnabled: config.psb_enabled === "true",
+    psbNumber: config.psb_number || "",
+    psbLink: config.psb_link || "",
+  };
+}
+
+// ==================== 页面标题与图标 ====================
+
+async function resolvePageTitle(pageTitleKey: "access_page_title" | "home_page_title"): Promise<string> {
+  const [pageTitle, siteTitle] = await Promise.all([
+    getSiteConfigValue(pageTitleKey, ""),
+    getSiteConfigValue("site_title", DEFAULT_SITE_CONFIG.site_title),
+  ]);
+  return pageTitle || siteTitle || DEFAULT_SITE_CONFIG.site_title;
+}
+
+export async function getAccessPageTitle(): Promise<string> {
+  return resolvePageTitle("access_page_title");
+}
+
+export async function getHomePageTitle(): Promise<string> {
+  return resolvePageTitle("home_page_title");
+}
+
+export async function getSiteFavicon(): Promise<string | null> {
+  try {
+    const assetId = await getSiteConfigValue("site_favicon_asset_id", "");
+    if (!assetId) return null;
+    const resource = await prisma.resource.findUnique({
+      where: { id: assetId },
+      select: { url: true },
+    });
+    return resource?.url || null;
+  } catch {
+    return null;
+  }
+}
+
+// ==================== 访客认证开关 ====================
+
+export async function getVisitorPasswordEnabled(): Promise<boolean> {
+  const value = await getSiteConfigValue("visitor_password_enabled", "true");
+  return value === "true";
 }
 
 /**

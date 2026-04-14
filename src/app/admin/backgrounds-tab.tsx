@@ -278,7 +278,7 @@ export default function BackgroundsTab() {
                 min={0}
                 max={50}
                 value={config.blur}
-                onChange={(e) => setConfig({ ...config, blur: parseInt(e.target.value) || 10 })}
+                onChange={(e) => setConfig({ ...config, blur: Number.isNaN(parseInt(e.target.value)) ? 10 : parseInt(e.target.value) })}
                 className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white text-sm"
               />
             </div>
@@ -290,7 +290,7 @@ export default function BackgroundsTab() {
                 max={1}
                 step={0.1}
                 value={config.overlay}
-                onChange={(e) => setConfig({ ...config, overlay: parseFloat(e.target.value) || 0.3 })}
+                onChange={(e) => setConfig({ ...config, overlay: Number.isNaN(parseFloat(e.target.value)) ? 0.3 : parseFloat(e.target.value) })}
                 className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white text-sm"
               />
             </div>

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { PublicButtonGroup } from "@/lib/buttons";
 import type { PublicBackgroundData } from "@/lib/backgrounds";
+import type { FooterMetaConfig } from "@/lib/site/config";
+import SiteFooterMeta from "@/components/site-footer-meta";
 import { logPageAccess } from "@/lib/logs/client-logger";
 
 interface HomeClientProps {
@@ -14,9 +16,10 @@ interface HomeClientProps {
   };
   backgroundData: PublicBackgroundData;
   buttonGroups: PublicButtonGroup[];
+  footerMeta: FooterMetaConfig;
 }
 
-export default function HomeClient({ siteInfo, backgroundData, buttonGroups }: HomeClientProps) {
+export default function HomeClient({ siteInfo, backgroundData, buttonGroups, footerMeta }: HomeClientProps) {
   const [loading, setLoading] = useState(false);
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -219,6 +222,9 @@ export default function HomeClient({ siteInfo, backgroundData, buttonGroups }: H
           </div>
         </div>
       </div>
+
+      {/* 底部备案信息 */}
+      <SiteFooterMeta config={footerMeta} page="home" />
     </main>
   );
 }

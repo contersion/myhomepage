@@ -105,8 +105,46 @@ function test(name, fn) {
   tests.push({ name, fn });
 }
 
+/**
+ * 断言响应重定向到指定路径
+ * 兼容相对路径（/access）与绝对路径（http://host/access）
+ */
+function assertRedirectTo(res, expectedPath) {
+  const location = res.headers.location || '';
+  let actualPath = location;
+  try {
+    const url = new URL(location);
+    actualPath = url.pathname + url.search + url.hash;
+  } catch {
+    // 不是完整 URL，当作相对路径处理
+  }
+  if (actualPath !== expectedPath) {
+    throw new Error(`Expected redirect to ${expectedPath}, got ${actualPath}`);
+  }
+}
+
+// 探测访客密码开关状态
+async function detectVisitorPasswordState(baseUrl) {
+  try {
+    const res = await request(`${baseUrl}/`);
+    // 若直接 200 或重定向到自身 /，视为关闭；若 307/302 到 /access，视为开启
+    if (res.statusCode === 307 || res.statusCode === 302) {
+      const loc = res.headers.location || '';
+      if (loc.includes('/access')) return 'enabled';
+      if (loc === '/' || loc === '') return 'disabled';
+      return 'enabled'; // 保守默认
+    }
+    if (res.statusCode === 200) return 'disabled';
+  } catch {
+    // ignore
+  }
+  return 'enabled'; // 默认保守
+}
+
 // 定义 Smoke Tests - 只覆盖最关键链路
-function defineSmokeTests(baseUrl) {
+function defineSmokeTests(baseUrl, visitorPasswordEnabled) {
+  const pwdState = visitorPasswordEnabled ? 'enabled' : 'disabled';
+
   // 1. 健康检查
   test('health endpoint returns ok', async () => {
     const res = await request(`${baseUrl}/api/health`);
@@ -122,19 +160,33 @@ function defineSmokeTests(baseUrl) {
     }
   });
 
-  // 2. 首页重定向
-  test('root redirects to access when not logged in', async () => {
+  // 2. 首页行为（根据访客密码状态分支断言）
+  test(`root behaves correctly (visitor password ${pwdState})`, async () => {
     const res = await request(`${baseUrl}/`);
-    if (res.statusCode !== 307 && res.statusCode !== 302) {
-      throw new Error(`Expected redirect, got HTTP ${res.statusCode}`);
+    if (visitorPasswordEnabled) {
+      if (res.statusCode !== 307 && res.statusCode !== 302) {
+        throw new Error(`Expected redirect to /access, got HTTP ${res.statusCode}`);
+      }
+      assertRedirectTo(res, '/access');
+    } else {
+      if (res.statusCode !== 200 && !(res.statusCode === 307 && res.headers.location === '/')) {
+        throw new Error(`Expected 200 or redirect to /, got HTTP ${res.statusCode}`);
+      }
     }
   });
 
-  // 3. 访客登录页
-  test('access page is accessible', async () => {
+  // 3. 访问页行为（根据访客密码状态分支断言）
+  test(`access page behaves correctly (visitor password ${pwdState})`, async () => {
     const res = await request(`${baseUrl}/access`);
-    if (res.statusCode !== 200) {
-      throw new Error(`HTTP ${res.statusCode}`);
+    if (visitorPasswordEnabled) {
+      if (res.statusCode !== 200) {
+        throw new Error(`Expected 200, got HTTP ${res.statusCode}`);
+      }
+    } else {
+      if (res.statusCode !== 307 && res.statusCode !== 302) {
+        throw new Error(`Expected redirect to /, got HTTP ${res.statusCode}`);
+      }
+      assertRedirectTo(res, '/');
     }
   });
 
@@ -242,6 +294,14 @@ function defineSmokeTests(baseUrl) {
       throw new Error(`Expected 401/429, got HTTP ${res.statusCode}`);
     }
   });
+
+  // 12. favicon 固定入口可访问
+  test('favicon endpoint returns valid response', async () => {
+    const res = await request(`${baseUrl}/api/site/favicon`);
+    if (res.statusCode !== 200 && res.statusCode !== 307 && res.statusCode !== 302) {
+      throw new Error(`Expected 200/307/302, got HTTP ${res.statusCode}`);
+    }
+  });
 }
 
 // 运行测试
@@ -290,10 +350,16 @@ async function main() {
     console.log('');
     process.exit(1);
   }
+
+  // 探测访客密码状态
+  const visitorPasswordState = await detectVisitorPasswordState(baseUrl);
+  const visitorPasswordEnabled = visitorPasswordState === 'enabled';
+  info(`Detected visitor password: ${visitorPasswordState}`);
+  console.log('');
   
   // 定义并运行测试
   const startTime = Date.now();
-  defineSmokeTests(baseUrl);
+  defineSmokeTests(baseUrl, visitorPasswordEnabled);
   const results = await runTests();
   const duration = Date.now() - startTime;
   
@@ -314,7 +380,7 @@ async function main() {
     info('Failures:');
     for (const { name, error } of results.failures) {
       console.log(`  • ${name}`);
-      console.log(`    ${colors.gray}${error}${colors.reset}`);
+      console.log(`    ${colors.gray}${error}${colors.gray}`);
     }
     console.log('');
     process.exit(1);

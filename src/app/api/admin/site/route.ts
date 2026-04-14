@@ -47,9 +47,29 @@ export async function GET(request: NextRequest) {
 
 // 更新配置请求体验证
 const updateConfigSchema = z.object({
+  // 站点基础信息
   site_title: z.string().min(1, "标题不能为空").max(100).optional(),
   site_subtitle: z.string().max(200).optional(),
   site_description: z.string().max(500).optional(),
+  // Access 页面背景
+  access_background_enabled: z.enum(["true", "false"]).optional(),
+  access_background_asset_id: z.union([z.string().max(100), z.literal("")]).optional().nullable(),
+  access_background_mobile_asset_id: z.union([z.string().max(100), z.literal("")]).optional().nullable(),
+  access_background_overlay: z.string().optional(),
+  access_background_blur: z.string().optional(),
+  // 页面标题与图标
+  access_page_title: z.string().max(100).optional(),
+  home_page_title: z.string().max(100).optional(),
+  site_favicon_asset_id: z.union([z.string().max(100), z.literal("")]).optional().nullable(),
+  // 底部备案信息
+  footer_meta_enabled: z.enum(["true", "false"]).optional(),
+  footer_meta_display_scope: z.enum(["none", "access", "home", "both"]).optional(),
+  icp_enabled: z.enum(["true", "false"]).optional(),
+  icp_number: z.string().max(100).optional(),
+  icp_link: z.string().max(500).optional(),
+  psb_enabled: z.enum(["true", "false"]).optional(),
+  psb_number: z.string().max(100).optional(),
+  psb_link: z.string().max(500).optional(),
 });
 
 /**
@@ -76,16 +96,75 @@ export async function PUT(request: NextRequest) {
     
     const updates = result.data;
     const ip = request.headers.get("x-forwarded-for") || "unknown";
-    
+
+    // 校验背景资源 ID 是否合法（去重后校验，允许 PC 与手机使用同一资源）
+    const assetIds = [
+      ...new Set(
+        [
+          updates.access_background_asset_id,
+          updates.access_background_mobile_asset_id,
+        ].filter((id): id is string => !!id)
+      ),
+    ];
+
+    if (assetIds.length > 0) {
+      const existingCount = await prisma.resource.count({
+        where: { id: { in: assetIds } },
+      });
+      if (existingCount !== assetIds.length) {
+        return errorResponse("选择的背景资源不存在或已被删除", 400);
+      }
+    }
+
+    // 校验站点图标资源（允许资源池稳定产出的图片格式）
+    if (updates.site_favicon_asset_id) {
+      const resource = await prisma.resource.findUnique({
+        where: { id: updates.site_favicon_asset_id },
+        select: { mimeType: true },
+      });
+      if (!resource) {
+        return errorResponse("选择的站点图标资源不存在或已被删除", 400);
+      }
+      const allowedMimes = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif",
+      ];
+      if (!allowedMimes.includes(resource.mimeType)) {
+        return errorResponse("站点图标仅支持 PNG、JPG、WebP、GIF 格式", 400);
+      }
+    }
+
+    // 数值字段基础校验
+    if (updates.access_background_overlay !== undefined) {
+      const overlay = parseFloat(updates.access_background_overlay);
+      if (Number.isNaN(overlay) || overlay < 0 || overlay > 1) {
+        return errorResponse("背景遮罩透明度需在 0-1 之间", 400);
+      }
+    }
+    if (updates.access_background_blur !== undefined) {
+      const blur = parseInt(updates.access_background_blur, 10);
+      if (Number.isNaN(blur) || blur < 0 || blur > 50) {
+        return errorResponse("背景模糊强度需在 0-50 之间", 400);
+      }
+    }
+
+    // 归一化：null/undefined 转空字符串，便于统一存入 SiteConfig
+    const normalizedUpdates: Record<string, string> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      normalizedUpdates[key] = value === null || value === undefined ? "" : String(value);
+    }
+
     // 更新配置
-    await updateSiteConfig(updates);
+    await updateSiteConfig(normalizedUpdates);
     
     // 记录操作日志（异步）
     prisma.operationLog.create({
       data: {
         userType: "admin",
         action: "UPDATE_SITE_CONFIG",
-        details: `更新了站点配置: ${Object.keys(updates).join(", ")}`,
+        details: `更新了站点配置: ${Object.keys(normalizedUpdates).join(", ")}`,
         ip,
       },
     }).catch(() => {});

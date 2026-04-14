@@ -3,16 +3,11 @@
  * 处理路由保护和重定向逻辑
  * 
  * 注意：Middleware 在 Edge Runtime 运行，无法直接访问 Node.js 模块
- * 这里使用简单的 cookie 检查，复杂鉴权在 API/页面层完成
+ * 访客访问控制已下沉到页面服务端组件处理，这里仅保留管理员路由保护
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-// 需要访客认证的路径
-const VISITOR_PROTECTED_PATHS = ["/"];
-// 访客认证页面
-const VISITOR_LOGIN_PATH = "/access";
 
 // 需要管理员认证的路径前缀
 const ADMIN_PROTECTED_PATHS = ["/admin"];
@@ -37,28 +32,6 @@ function isValidTokenFormat(token: string | undefined): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // ========== 访客路由保护 ==========
-  const isVisitorProtected = VISITOR_PROTECTED_PATHS.some(
-    (path) => pathname === path
-  );
-  const isVisitorLoginPage = pathname === VISITOR_LOGIN_PATH;
-  
-  // 检查访客认证状态
-  const visitorToken = request.cookies.get("visitor_session")?.value;
-  const isVisitorAuth = isValidTokenFormat(visitorToken);
-  
-  // 未登录访问受保护页面 -> 重定向到登录页
-  if (isVisitorProtected && !isVisitorAuth) {
-    const loginUrl = new URL(VISITOR_LOGIN_PATH, request.url);
-    return NextResponse.redirect(loginUrl);
-  }
-  
-  // 已登录访问登录页 -> 重定向到首页
-  if (isVisitorLoginPage && isVisitorAuth) {
-    const homeUrl = new URL("/", request.url);
-    return NextResponse.redirect(homeUrl);
-  }
   
   // ========== 管理员路由保护 ==========
   const isAdminProtected = ADMIN_PROTECTED_PATHS.some(
@@ -88,12 +61,6 @@ export function middleware(request: NextRequest) {
 // 配置 middleware 匹配路径
 export const config = {
   matcher: [
-    // 访客相关路径
-    "/",
-    "/access",
-    // 管理员相关路径
     "/admin/:path*",
-    // 排除静态资源和 API
-    "/((?!api|_next|favicon.ico|.*\\.).*)",
   ],
 };

@@ -12,7 +12,7 @@
 - **说明**: SQLite 数据库文件路径
 - **默认值**: `file:./storage/data/app.db`
 - **示例**: `file:/app/storage/data/app.db` (Docker 内)
-- **注意**: Docker 部署时保持默认值即可
+- **注意**: Docker 部署时**必须**在 `docker-compose.yml` 中使用绝对路径（如 `file:/app/storage/data/app.db`），不可继续使用相对路径，否则 Prisma 会按 `schema.prisma` 所在目录解析，导致数据库写入镜像内部，重启后数据丢失
 
 #### VISITOR_SESSION_SECRET
 - **说明**: 访客会话加密密钥
@@ -138,6 +138,23 @@
 | `background_interval` | 背景轮播间隔(秒) | 5 |
 | `background_random` | 背景随机起始 | true |
 | `background_mobile_inherit` | 手机继承PC背景 | true |
+| `access_background_enabled` | 是否启用 `/access` 页面背景 | false |
+| `access_background_asset_id` | 访问页 PC 背景资源 ID | "" |
+| `access_background_mobile_asset_id` | 访问页手机背景资源 ID（可选） | "" |
+| `access_background_overlay` | 访问页背景遮罩透明度 | 0.3 |
+| `access_background_blur` | 访问页背景模糊强度(px) | 10 |
+| `access_page_title` | `/access` 页面标题 | ""（回退到站点标题） |
+| `home_page_title` | 首页 `/` 标题 | ""（回退到站点标题） |
+| `site_favicon_asset_id` | 站点图标 favicon 资源 ID | ""（不自定义） |
+| `visitor_password_enabled` | 是否启用访客密码 | true |
+| `footer_meta_enabled` | 是否启用底部备案信息区 | false |
+| `footer_meta_display_scope` | 备案区显示范围：none/access/home/both | none |
+| `icp_enabled` | 是否显示 ICP 备案 | false |
+| `icp_number` | ICP 备案号 | "" |
+| `icp_link` | ICP 备案链接（可选） | "" |
+| `psb_enabled` | 是否显示公安备案 | false |
+| `psb_number` | 公安备案号 | "" |
+| `psb_link` | 公安备案链接（可选） | "" |
 
 ## 登录限制配置
 
