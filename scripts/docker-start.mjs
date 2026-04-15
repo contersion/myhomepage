@@ -65,6 +65,19 @@ async function main() {
           env: process.env
         });
         log('Database migrations completed');
+
+        // 运行数据库 seed（幂等，可重复执行）
+        try {
+          log('Step 2b: Seeding database...');
+          execSync('./node_modules/.bin/tsx prisma/seed.ts', {
+            cwd: '/app',
+            stdio: 'inherit',
+            env: process.env
+          });
+          log('Database seeding completed');
+        } catch (e) {
+          error(`Seeding failed: ${e.message}`);
+        }
       } catch (e) {
         error(`Migration failed: ${e.message}`);
       }
