@@ -58,5 +58,5 @@ storage/backups/*
 Thumbs.db
 
 # Logs
-logs/
+/logs/
 *.log
