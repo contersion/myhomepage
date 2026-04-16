@@ -62,6 +62,8 @@ const updateConfigSchema = z.object({
   home_page_title: z.string().max(100).optional(),
   admin_page_title: z.string().max(100).optional(),
   site_favicon_asset_id: z.union([z.string().max(100), z.literal("")]).optional().nullable(),
+  site_avatar_asset_id: z.union([z.string().max(100), z.literal("")]).optional().nullable(),
+  site_avatar_shape: z.enum(["circle", "rounded-xl", "rounded-2xl"]).optional(),
   // 底部备案信息
   footer_meta_enabled: z.enum(["true", "false"]).optional(),
   footer_meta_display_scope: z.enum(["none", "access", "home", "both"]).optional(),
@@ -134,6 +136,26 @@ export async function PUT(request: NextRequest) {
       ];
       if (!allowedMimes.includes(resource.mimeType)) {
         return errorResponse("站点图标仅支持 PNG、JPG、WebP、GIF 格式", 400);
+      }
+    }
+
+    // 校验头像资源
+    if (updates.site_avatar_asset_id) {
+      const resource = await prisma.resource.findUnique({
+        where: { id: updates.site_avatar_asset_id },
+        select: { mimeType: true },
+      });
+      if (!resource) {
+        return errorResponse("选择的头像资源不存在或已被删除", 400);
+      }
+      const allowedMimes = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif",
+      ];
+      if (!allowedMimes.includes(resource.mimeType)) {
+        return errorResponse("头像仅支持 PNG、JPG、WebP、GIF 格式", 400);
       }
     }
 

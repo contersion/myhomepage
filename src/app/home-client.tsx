@@ -6,6 +6,7 @@ import type { PublicButtonGroup } from "@/lib/buttons";
 import type { PublicBackgroundData } from "@/lib/backgrounds";
 import type { FooterMetaConfig } from "@/lib/site/config";
 import SiteFooterMeta from "@/components/site-footer-meta";
+import Avatar from "@/components/avatar";
 import { logPageAccess } from "@/lib/logs/client-logger";
 
 interface HomeClientProps {
@@ -13,6 +14,8 @@ interface HomeClientProps {
     title: string;
     subtitle: string;
     description: string;
+    avatar?: string | null;
+    avatarShape?: string;
   };
   backgroundData: PublicBackgroundData;
   buttonGroups: PublicButtonGroup[];
@@ -120,9 +123,7 @@ export default function HomeClient({ siteInfo, backgroundData, buttonGroups, foo
           {/* 主卡片 - 玻璃拟态效果 */}
           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-5 sm:p-8 shadow-2xl">
             {/* 头像占位 */}
-            <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 rounded-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-2xl sm:text-3xl font-bold text-white shadow-lg">
-              ME
-            </div>
+            <Avatar url={siteInfo.avatar} shape={siteInfo.avatarShape} />
 
             {/* 标题 - 从数据库读取 */}
             <h1 className="text-xl sm:text-2xl font-bold text-white text-center mb-2">

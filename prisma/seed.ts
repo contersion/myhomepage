@@ -6,6 +6,16 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Start seeding...");
 
+  // 检查是否已初始化过，避免每次重启覆盖已有数据或重建已删除的默认数据
+  const seeded = await prisma.siteConfig.findUnique({
+    where: { key: "__seeded__" },
+  });
+
+  if (seeded?.value === "true") {
+    console.log("Database already seeded, skipping.");
+    return;
+  }
+
   // 初始化站点配置
   const configs = [
     { key: "site_title", value: "我的个人主页", description: "站点标题" },
@@ -24,7 +34,7 @@ async function main() {
   for (const config of configs) {
     await prisma.siteConfig.upsert({
       where: { key: config.key },
-      update: { value: config.value },
+      update: {},
       create: config,
     });
   }
@@ -75,6 +85,13 @@ async function main() {
       },
     });
   }
+
+  // 写入初始化完成标记
+  await prisma.siteConfig.upsert({
+    where: { key: "__seeded__" },
+    update: {},
+    create: { key: "__seeded__", value: "true", description: "数据库已初始化标记" },
+  });
 
   console.log("Seeding finished.");
 }

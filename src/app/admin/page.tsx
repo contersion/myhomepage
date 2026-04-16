@@ -34,6 +34,8 @@ interface SiteConfig {
   home_page_title: string;
   admin_page_title: string;
   site_favicon_asset_id: string;
+  site_avatar_asset_id: string;
+  site_avatar_shape: "circle" | "rounded-xl" | "rounded-2xl";
   // 底部备案
   footer_meta_enabled: boolean;
   footer_meta_display_scope: "none" | "access" | "home" | "both";
@@ -413,6 +415,8 @@ function SiteConfigTab() {
     home_page_title: "",
     admin_page_title: "",
     site_favicon_asset_id: "",
+    site_avatar_asset_id: "",
+    site_avatar_shape: "circle",
     footer_meta_enabled: false,
     footer_meta_display_scope: "none",
     icp_enabled: false,
@@ -447,6 +451,10 @@ function SiteConfigTab() {
             home_page_title: data.data.home_page_title || "",
             admin_page_title: data.data.admin_page_title || "",
             site_favicon_asset_id: data.data.site_favicon_asset_id || "",
+            site_avatar_asset_id: data.data.site_avatar_asset_id || "",
+            site_avatar_shape: ["circle", "rounded-xl", "rounded-2xl"].includes(data.data.site_avatar_shape)
+              ? data.data.site_avatar_shape
+              : "circle",
             footer_meta_enabled: data.data.footer_meta_enabled === "true",
             footer_meta_display_scope: ["none", "access", "home", "both"].includes(data.data.footer_meta_display_scope)
               ? data.data.footer_meta_display_scope
@@ -485,6 +493,8 @@ function SiteConfigTab() {
       home_page_title: config.home_page_title,
       admin_page_title: config.admin_page_title,
       site_favicon_asset_id: config.site_favicon_asset_id,
+      site_avatar_asset_id: config.site_avatar_asset_id,
+      site_avatar_shape: config.site_avatar_shape,
       footer_meta_enabled: config.footer_meta_enabled ? "true" : "false",
       footer_meta_display_scope: config.footer_meta_display_scope,
       icp_enabled: config.icp_enabled ? "true" : "false",
@@ -577,6 +587,49 @@ function SiteConfigTab() {
                 className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
                 placeholder="输入站点简介"
               />
+            </div>
+
+            {/* 头像 */}
+            <div className="space-y-4">
+              <div>
+                <ResourcePicker
+                  label="头像"
+                  selectedId={config.site_avatar_asset_id}
+                  onChange={(id) => setConfig({ ...config, site_avatar_asset_id: id })}
+                  assetType="icon"
+                />
+                <p className="text-xs text-gray-500 mt-2">建议尺寸 200×200 以上，支持 PNG、JPG、WebP、GIF</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  头像形状
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { value: "circle", label: "圆形" },
+                    { value: "rounded-xl", label: "圆角正方形（小）" },
+                    { value: "rounded-2xl", label: "圆角正方形（大）" },
+                  ].map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="avatar_shape"
+                        value={opt.value}
+                        checked={config.site_avatar_shape === opt.value}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            site_avatar_shape: e.target.value as SiteConfig["site_avatar_shape"],
+                          })
+                        }
+                        className="w-4 h-4 border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-gray-300">{opt.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

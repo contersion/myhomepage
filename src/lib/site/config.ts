@@ -25,6 +25,9 @@ export const DEFAULT_SITE_CONFIG = {
   admin_page_title: "",
   // 站点图标
   site_favicon_asset_id: "",
+  // 头像
+  site_avatar_asset_id: "",
+  site_avatar_shape: "circle",
   // 访客密码开关
   visitor_password_enabled: "true",
   // 底部备案信息
@@ -103,13 +106,31 @@ export async function getPublicSiteInfo(): Promise<{
   title: string;
   subtitle: string;
   description: string;
+  avatar: string | null;
+  avatarShape: string;
 }> {
   const config = await getSiteConfig();
-  
+
+  let avatarUrl: string | null = null;
+  if (config.site_avatar_asset_id) {
+    const resource = await prisma.resource.findUnique({
+      where: { id: config.site_avatar_asset_id },
+      select: { url: true },
+    });
+    avatarUrl = resource?.url || null;
+  }
+
+  const validShapes = ["circle", "rounded-xl", "rounded-2xl"];
+  const avatarShape = validShapes.includes(config.site_avatar_shape)
+    ? config.site_avatar_shape
+    : "circle";
+
   return {
     title: config.site_title || DEFAULT_SITE_CONFIG.site_title,
     subtitle: config.site_subtitle || DEFAULT_SITE_CONFIG.site_subtitle,
     description: config.site_description || DEFAULT_SITE_CONFIG.site_description,
+    avatar: avatarUrl,
+    avatarShape,
   };
 }
 
